@@ -6,7 +6,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async getProfile(userId: number) {
+  async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -19,7 +19,7 @@ export class UserService {
     });
   }
 
-  async updateProfile(userId: number, dto: UpdateUserDto) {
+  async updateProfile(userId: string, dto: UpdateUserDto) {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: dto,
