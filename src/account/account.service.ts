@@ -1,41 +1,91 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Prisma } from '@prisma/client';
-import { CreateAccountDto } from './dto/create-account.dto';
-import { UpdateAccountDto } from './dto/update-account.dto';
+import { AccountResponseDto } from './dto/account.dto';
 
 @Injectable()
 export class AccountService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(userId: string, dto: CreateAccountDto) {
-    return this.prisma.account.create({
-      data: { ...dto, userId, balance: new Prisma.Decimal(0) },
+  // Create new account
+  async create(userId: string): Promise<AccountResponseDto> {
+    const accountNumber = await this.generateAccountNumber();
+    const account = await this.prisma.account.create({
+      data: { userId, accountNumber },
     });
+
+    return {
+      ...account,
+      balance: account.balance.toNumber(),
+    }
   }
 
-  async findAll(userId: string) {
-    return this.prisma.account.findMany({ where: { userId } });
-  }
-
-  async findOne(userId: string, id: string) {
-    const account = await this.prisma.account.findFirst({
-      where: { id, userId },
+  // Find all account
+  async findAll(userId: string): Promise<AccountResponseDto[]> {
+    const accounts = await this.prisma.account.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
     });
-    if (!account) throw new NotFoundException('Account not found');
-    return account;
+
+    return accounts.map(account => ({
+      ...account,
+      balance: account.balance.toNumber(),
+    }));
   }
 
-  async update(userId: string, id: string, dto: UpdateAccountDto) {
-    await this.findOne(userId, id);
-    return this.prisma.account.update({
+  // Find account by ID
+  async findOne(userId: string, id: string): Promise<AccountResponseDto> {
+    const account = await this.prisma.account.findUnique({
       where: { id },
-      data: dto,
+    });
+
+    if (!account) throw new NotFoundException('Account not found');
+    if (account.userId !== userId) throw new ForbiddenException('You do not have permission to access this account')
+
+    return {
+      ...account,
+      balance: account.balance.toNumber(),
+    };
+  }
+
+  // Generate account number
+  private async generateAccountNumber(): Promise<string> {
+    let accountNumber = '';
+    let isUnique = false;
+
+    while (!isUnique) {
+      accountNumber = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+
+      const existing = await this.prisma.account.findUnique({
+        where: { accountNumber },
+      });
+
+      if (!existing) { isUnique = true }
+    }
+
+    return accountNumber;
+  }
+
+  // Update account balance
+  async updateBalance(accountId: string, amount: number): Promise<void> {
+    await this.prisma.account.update({
+      where: { id: accountId },
+      data: {
+        balance: {
+          increment: amount,
+        },
+      },
     });
   }
 
-  async remove(userId: string, id: string) {
-    await this.findOne(userId, id);
-    return this.prisma.account.delete({ where: { id } });
+  // Get account balance
+  async getBalance(accountId: string): Promise<number> {
+    const account = await this.prisma.account.findUnique({
+      where: { id: accountId },
+      select: { balance: true },
+    });
+
+    if (!account) throw new NotFoundException('Account not found');
+
+    return account.balance.toNumber();
   }
 }
