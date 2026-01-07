@@ -5,10 +5,10 @@ The purpose of this project is to learn about how backend system works. This is 
 
 ## Deployment
 **Base API URL:** <br>
-Railway: [revobank-adsrchve.up.railway.app](revobank-adsrchve.up.railway.app)
+Railway: [https://revobank-adsrchve.up.railway.app](https://revobank-adsrchve.up.railway.app)
 
 **Swagger Documentation** <br>
-Swagger UI: [revobank-adsrchve.up.railway.app/api](revobank-adsrchve.up.railway.app/api)
+Swagger UI: [https://revobank-adsrchve.up.railway.app/api](https://revobank-adsrchve.up.railway.app/api)
 
 ## Railway Deployment
 **Build Command** <br>
